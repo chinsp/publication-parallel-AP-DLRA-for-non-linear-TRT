@@ -1,0 +1,1 @@
+This is a repository with codes for generating the plots in the paper "A Parallel, Energy-Stable Low-Rank Integrator for Nonlinear Multi-Scale Thermal Radiative Transfer" by Chinmay Patwardhan and Jonas Kusch. 
