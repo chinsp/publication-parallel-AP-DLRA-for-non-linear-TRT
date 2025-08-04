@@ -90,8 +90,8 @@ fig1.savefig("2DMarshakNL/results/$problem/energy.pdf")
 
 
 fig,ax = subplots(figsize=(10,10),dpi=100);
-ax.semilogx(epsilon_vals,Temp_mat_DL_error,"-",color ="red",linestyle = "dashed",label = "Full solver",alpha=0.8, linewidth = 5, markersize = 10,markerfacecolor="none");
-ax.semilogx(epsilon_vals,Temp_mat_FS_error,"-",color ="blue",linestyle="dotted",label = "Parallel BUG solver",alpha=0.8, linewidth = 5, markersize = 10,markerfacecolor="none");
+ax.semilog(epsilon_vals,Temp_mat_DL_error,"-",color ="red",linestyle = "dashed",label = "Full solver",alpha=0.8, linewidth = 5, markersize = 10,markerfacecolor="none");
+ax.semilog(epsilon_vals,Temp_mat_FS_error,"-",color ="blue",linestyle="dotted",label = "Parallel BUG solver",alpha=0.8, linewidth = 5, markersize = 10,markerfacecolor="none");
 ax.set_ylabel("Relative error",fontsize=25);
 ax.set_xlabel(L"\varepsilon");
 fig.canvas.draw();
