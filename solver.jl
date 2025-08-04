@@ -193,6 +193,12 @@ function ComputeEnergy(obj::SolverMarshak,BT,Temp,h,g)
     epsilon = obj.settings.epsilon;
     c_nu = obj.settings.c_nu;
     aRad = obj.settings.aRad;
+    dzeta = obj.settings.dx*obj.settings.dy;
+    if g isa CuArray
+        M = CuSparseMatrixCSC(obj.sn.M);
+    else
+        M = obj.sn.M;
+    end
 
     sum1 = 0.0;
     sum2 = 0.0;
@@ -203,11 +209,36 @@ function ComputeEnergy(obj::SolverMarshak,BT,Temp,h,g)
         sum2 += aRad*c_nu/4/pi^2 * (Temp[i])^5; 
     end
 
-    for i = 1:obj.SG.N_MicroGrid
-        sum3 += (epsilon/AdvecSpeed*g[i])^2;
+    sum3 = (epsilon/AdvecSpeed)^2*tr(g*M*g');
+
+    energy = sum1*dzeta + 1/2/pi*sum3*dzeta + 2/5*sum2*dzeta;
+    return energy;
+end
+
+function ComputeEnergy(obj::SolverMarshak,BT,Temp,h,X,S,V) 
+    AdvecSpeed = obj.settings.AdvecSpeed;
+    epsilon = obj.settings.epsilon;
+    c_nu = obj.settings.c_nu;
+    aRad = obj.settings.aRad;
+    dzeta = obj.settings.dx*obj.settings.dy;
+    if X isa CuArray
+        M = CuSparseMatrixCSC(obj.sn.M);
+    else
+        M = obj.sn.M;
     end
 
-    energy = sum1 + 1/2/pi*sum3 + 2/5*sum2;
+    sum1 = 0.0;
+    sum2 = 0.0;
+    sum3 = 0.0;
+
+    for i = 1:obj.SG.N_MacroGrid
+        sum1 += (1/AdvecSpeed*BT[i] + epsilon^2/AdvecSpeed * h[i])^2;
+        sum2 += aRad*c_nu/4/pi^2 * (Temp[i])^5; 
+    end
+    
+    sum3 = (epsilon/AdvecSpeed)^2*tr(X*S*V'*M*V*S'*X');
+
+    energy = sum1*dzeta + 1/2/pi*sum3*dzeta + 2/5*sum2*dzeta;
     return energy;
 end
 
@@ -1060,7 +1091,7 @@ function SolveParBUG(obj::SolverMarshak{T}) where {T<:AbstractFloat}
 
     energy = zeros(Nt+1);
     mass = zeros(Nt+1);
-    energy[1] = ComputeEnergy(obj,BT,Temp,h,X*S*V');
+    energy[1] = ComputeEnergy(obj,BT,Temp,h,X,S,V);
     mass[1] = ComputeMass(obj,BT,Temp,h);
 
     # save_solution(obj.settings.problem,"parallel_solver",Temp,0,0);
@@ -1222,7 +1253,7 @@ function SolveParBUG(obj::SolverMarshak{T}) where {T<:AbstractFloat}
         h .= BCh(obj.settings,obj.SG,obj.sn,h,X*S*V',Temp);
         BT .= aRad*AdvecSpeed.*Temp.^4 ./2/pi;
 
-        energy[k+1] = ComputeEnergy(obj,BT,Temp,h,X*S*V');
+        energy[k+1] = ComputeEnergy(obj,BT,Temp,h,X,S,V);
         mass[k+1] = ComputeMass(obj,BT,Temp,h);
 
         
@@ -1339,7 +1370,7 @@ function SolveParBUGasync(obj::SolverMarshak{T}) where {T<:AbstractFloat}
 
     energy = zeros(Nt+1);
     mass = zeros(Nt+1);
-    energy[1] = ComputeEnergy(obj,BT,Temp,h,X*S*V');
+    energy[1] = ComputeEnergy(obj,BT,Temp,h,X,S,V);
     mass[1] = ComputeMass(obj,BT,Temp,h);
 
     # save_solution(obj.settings.problem,"parallel_solver",Temp,0,0);
@@ -1510,7 +1541,7 @@ function SolveParBUGasync(obj::SolverMarshak{T}) where {T<:AbstractFloat}
         h .= BCh(obj.settings,obj.SG,obj.sn,h,X*S*V',Temp);
         BT .= aRad*AdvecSpeed.*Temp.^4 ./2/pi;
 
-        energy[k+1] = ComputeEnergy(obj,BT,Temp,h,X*S*V');
+        energy[k+1] = ComputeEnergy(obj,BT,Temp,h,X,S,V);
         mass[k+1] = ComputeMass(obj,BT,Temp,h);
 
         
