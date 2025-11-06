@@ -16,6 +16,7 @@ mutable struct SNSystem{T<:AbstractFloat}
 
     points::Array{T,2};
     w::Array{T};
+    M::SparseMatrixCSC{T,Int64}; # Diagonal matrix of weights
 
     # Solver settings
     settings::Settings;
@@ -37,8 +38,9 @@ mutable struct SNSystem{T<:AbstractFloat}
 
         quadrature = Quadrature(Nv,1);
 
-        points =  Array{T}(undef, 0, 0);
+        points = Array{T}(undef, 0, 0);
         w = [];
+        M = sparse([],[],[],TNv,TNv);
 
         Qx = sparse([],[],[],TNv,TNv);
         Qy = sparse([],[],[],TNv,TNv);
@@ -49,7 +51,7 @@ mutable struct SNSystem{T<:AbstractFloat}
         AbsQz = sparse([],[],[],TNv,TNv);
 
 
-        new{T}(Qx,Qy,Qz,AbsQx,AbsQy,AbsQz,points,w,settings,Nv,TNv,quadrature,T);
+        new{T}(Qx,Qy,Qz,AbsQx,AbsQy,AbsQz,points,w,M,settings,Nv,TNv,quadrature,T);
     end
 end
 
@@ -62,11 +64,12 @@ function SetupSNprojected2D(obj::SNSystem)
     IIx = zeros(TNv); Jx = zeros(TNv); valsx =zeros(TNv); valsabsx =zeros(TNv);
     IIy = zeros(TNv); Jy = zeros(TNv); valsy =zeros(TNv); valsabsy =zeros(TNv);
     IIz = zeros(TNv); Jz = zeros(TNv); valsz =zeros(TNv); valsabsz =zeros(TNv);
+    IIM = zeros(TNv); JM = zeros(TNv); valsM =zeros(TNv); 
 
     for k = 1:TNv
-        IIx[k] = k; IIy[k] = k; IIz[k] = k;
-        Jx[k] = k; Jy[k] = k; Jz[k] = k;
-        valsx[k] = points[k,1]; valsy[k] = points[k,2]; valsz[k] = points[k,3];
+        IIx[k] = k; IIy[k] = k; IIz[k] = k; IIM[k] = k;
+        Jx[k] = k; Jy[k] = k; Jz[k] = k; JM[k] = k;
+        valsx[k] = points[k,1]; valsy[k] = points[k,2]; valsz[k] = points[k,3]; valsM[k] = weights[k];
         valsabsx[k] = abs(points[k,1]); valsabsy[k] = abs(points[k,2]); valsabsz[k] = abs(points[k,3]);
     end
     obj.Qx = sparse(IIx,Jx,valsx,TNv,TNv);
@@ -79,4 +82,5 @@ function SetupSNprojected2D(obj::SNSystem)
 
     obj.points = points;
     obj.w = weights;
+    obj.M = sparse(IIM,JM,valsM,TNv,TNv);
 end
